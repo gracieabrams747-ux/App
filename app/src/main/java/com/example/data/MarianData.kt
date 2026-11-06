@@ -9,7 +9,8 @@ data class WallpaperItem(
     val category: String,
     val description: String,
     val drawableRes: Int,
-    val tags: List<String>
+    val tags: List<String>,
+    val isPremium: Boolean = false
 )
 
 data class MarianAdvocation(
@@ -44,6 +45,26 @@ data class ChatMessage(
 object MarianRepository {
 
     val wallpapers = listOf(
+        WallpaperItem(
+            id = "reina_cielos",
+            title = "Reina de los Cielos",
+            subtitle = "Corona imperial de doce estrellas y manto real de zafiro",
+            category = "Exclusivos VIP",
+            description = "Majestuosa obra de la Virgen María como Reina Soberana del Cielo, ceñida con diadema de doce astros luminosos y orla bordada en oro.",
+            drawableRes = R.drawable.img_mary_reina_cielos,
+            tags = listOf("VIP", "Reina", "Corona", "Zafiro", "Oro"),
+            isPremium = true
+        ),
+        WallpaperItem(
+            id = "inmaculada_luz",
+            title = "Inmaculada de Luz Eterna",
+            subtitle = "Gracia celestial derramada sobre la luna creciente",
+            category = "Exclusivos VIP",
+            description = "Sublime presencia de la Inmaculada en las alturas celestes, derramando rayos de amparo y consuelo maternal sobre el orbe.",
+            drawableRes = R.drawable.img_mary_inmaculada_luz,
+            tags = listOf("VIP", "Inmaculada", "Luna", "Rayos", "Gracia"),
+            isPremium = true
+        ),
         WallpaperItem(
             id = "guadalupe",
             title = "Nuestra Señora de Guadalupe",

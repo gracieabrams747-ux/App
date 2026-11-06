@@ -124,7 +124,11 @@ fun AdvocacionesScreen(
             contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            items(filteredAdvocations, key = { it.id }) { advocation ->
+            items(
+                items = filteredAdvocations,
+                key = { it.id },
+                contentType = { "advocation_item" }
+            ) { advocation ->
                 val isExpanded = expandedAdvocationId == advocation.id
 
                 AdvocationCard(

@@ -72,7 +72,8 @@ import com.example.util.MaryVoiceManager
 
 @Composable
 fun ShopDialog(
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onOpenVipShop: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val userCoins by UserProfileManager.coins.collectAsState()
@@ -205,13 +206,17 @@ fun ShopDialog(
 
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                            color = MarianGold.copy(alpha = 0.2f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MarianGold),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onOpenVipShop() }
                         ) {
                             Text(
-                                text = "+ Ganar en la app",
+                                text = "💎 Comprar VIP / PayPal",
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.primary
+                                color = MarianGold
                             )
                         }
                     }

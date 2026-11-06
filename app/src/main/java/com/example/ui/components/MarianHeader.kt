@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +50,12 @@ fun MarianHeader(
     actions: @Composable (() -> Unit)? = null
 ) {
     val coins by UserProfileManager.coins.collectAsState()
+    val avatarId by UserProfileManager.avatarId.collectAsState()
+    val customAvatarUri by UserProfileManager.customAvatarUri.collectAsState()
+    val isVip by UserProfileManager.isVip.collectAsState()
+    val isLegendary by UserProfileManager.isLegendary.collectAsState()
     var showShop by remember { mutableStateOf(false) }
+    var showPremiumShop by remember { mutableStateOf(false) }
     var showProfile by remember { mutableStateOf(false) }
 
     Surface(
@@ -69,30 +75,15 @@ fun MarianHeader(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Sacred halo icon with twelve stars motif (tap to open profile)
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    MarianGold.copy(alpha = 0.45f),
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                        .clickable { showProfile = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "Perfil y Corona de 12 estrellas",
-                        tint = MarianGold,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                // User's custom or sacred Marian avatar
+                MarianAvatar(
+                    avatarId = avatarId,
+                    customUri = customAvatarUri,
+                    isVip = isVip,
+                    isLegendary = isLegendary,
+                    size = 40.dp,
+                    modifier = Modifier.clickable { showProfile = true }
+                )
 
                 Spacer(modifier = Modifier.width(10.dp))
 
@@ -154,6 +145,21 @@ fun MarianHeader(
                     }
                 }
 
+                // VIP / Pay-to-win button
+                IconButton(
+                    onClick = { showPremiumShop = true },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .testTag("header_vip_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.WorkspacePremium,
+                        contentDescription = "Tienda VIP & Pay-to-Win",
+                        tint = MarianGold,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
                 // Profile button
                 IconButton(
                     onClick = { showProfile = true },
@@ -173,7 +179,17 @@ fun MarianHeader(
     }
 
     if (showShop) {
-        ShopDialog(onDismiss = { showShop = false })
+        ShopDialog(
+            onDismiss = { showShop = false },
+            onOpenVipShop = {
+                showShop = false
+                showPremiumShop = true
+            }
+        )
+    }
+
+    if (showPremiumShop) {
+        PremiumShopDialog(onDismiss = { showPremiumShop = false })
     }
 
     if (showProfile) {

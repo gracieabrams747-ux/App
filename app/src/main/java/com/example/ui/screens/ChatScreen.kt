@@ -156,7 +156,11 @@ fun ChatScreen(
             contentPadding = PaddingValues(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            items(messages, key = { it.id }) { message ->
+            items(
+                items = messages,
+                key = { it.id },
+                contentType = { if (it.isUser) "user_message" else "mary_message" }
+            ) { message ->
                 ChatMessageItem(
                     message = message,
                     onSpeak = { text ->
@@ -375,16 +379,14 @@ private fun ChatInputBar(
     isGenerating: Boolean
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding(),
+        modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
+        tonalElevation = 6.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(

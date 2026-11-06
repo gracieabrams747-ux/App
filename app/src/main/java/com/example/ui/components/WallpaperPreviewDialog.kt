@@ -189,7 +189,66 @@ fun WallpaperPreviewDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (!showTargetSelector) {
+                    var isUnlocked by remember { mutableStateOf(com.example.data.UserProfileManager.isWallpaperUnlocked(wallpaper)) }
+                    var showPremiumShop by remember { mutableStateOf(false) }
+
+                    if (!isUnlocked) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Surface(
+                                color = MarianGold.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(12.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MarianGold.copy(alpha = 0.5f)),
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
+                            ) {
+                                Text(
+                                    text = "👑 Fondo Exclusivo VIP. Desbloquéalo con tu Pase VIP o por 150 Monedas de la Virgen.",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(10.dp),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        val success = com.example.data.UserProfileManager.unlockWallpaper(wallpaper.id)
+                                        if (success) {
+                                            isUnlocked = true
+                                            Toast.makeText(context, "¡Fondo VIP desbloqueado!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Monedas insuficientes (Cuesta 150)", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, MarianGold)
+                                ) {
+                                    Text("Usar 150 Monedas", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MarianGold)
+                                }
+
+                                Button(
+                                    onClick = { showPremiumShop = true },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MarianGold, contentColor = Color.Black)
+                                ) {
+                                    Text("Pase VIP ($1.99)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        if (showPremiumShop) {
+                            PremiumShopDialog(onDismiss = {
+                                showPremiumShop = false
+                                isUnlocked = com.example.data.UserProfileManager.isWallpaperUnlocked(wallpaper)
+                            })
+                        }
+                    } else if (!showTargetSelector) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)

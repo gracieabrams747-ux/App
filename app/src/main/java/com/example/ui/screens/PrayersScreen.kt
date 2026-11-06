@@ -158,7 +158,11 @@ fun PrayersScreen(
             }
 
             // Prayers list
-            items(MarianRepository.prayers, key = { it.id }) { prayer ->
+            items(
+                items = MarianRepository.prayers,
+                key = { it.id },
+                contentType = { "prayer_item" }
+            ) { prayer ->
                 val isExpanded = expandedPrayerId == prayer.id
                 val isThisSpeaking = isSpeaking && currentSpeakingPrayerId == prayer.id
 

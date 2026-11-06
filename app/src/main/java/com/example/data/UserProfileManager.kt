@@ -20,7 +20,21 @@ data class ShopItem(
     val unlockedContent: String? = null
 )
 
+data class PremiumPackage(
+    val id: String,
+    val title: String,
+    val priceUsd: Double,
+    val priceFormatted: String,
+    val description: String,
+    val coinsReward: Int,
+    val badgeTitle: String,
+    val isLegendary: Boolean = false,
+    val tag: String
+)
+
 object UserProfileManager {
+    const val PAYPAL_EMAIL = "vabe950@gmail.com"
+
     private const val PREFS_NAME = "marian_user_profile"
     private const val KEY_COINS = "user_coins"
     private const val KEY_CREATED_TIMESTAMP = "user_created_timestamp"
@@ -30,6 +44,10 @@ object UserProfileManager {
     private const val KEY_MESSAGES_SENT = "user_messages_sent_total"
     private const val KEY_LAST_DAILY_BONUS = "user_last_daily_bonus_day"
     private const val KEY_SELECTED_TITLE = "user_selected_title"
+    private const val KEY_IS_VIP = "user_is_vip_pass"
+    private const val KEY_IS_LEGENDARY = "user_is_legendary_crown"
+    private const val KEY_AVATAR_ID = "user_selected_avatar_id"
+    private const val KEY_CUSTOM_AVATAR_URI = "user_custom_avatar_uri"
 
     private lateinit var prefs: SharedPreferences
 
@@ -57,10 +75,66 @@ object UserProfileManager {
     private val _messagesCount = MutableStateFlow(0)
     val messagesCount: StateFlow<Int> = _messagesCount.asStateFlow()
 
+    private val _isVip = MutableStateFlow(false)
+    val isVip: StateFlow<Boolean> = _isVip.asStateFlow()
+
+    private val _isLegendary = MutableStateFlow(false)
+    val isLegendary: StateFlow<Boolean> = _isLegendary.asStateFlow()
+
+    private val _avatarId = MutableStateFlow("avatar_corona")
+    val avatarId: StateFlow<String> = _avatarId.asStateFlow()
+
+    private val _customAvatarUri = MutableStateFlow<String?>(null)
+    val customAvatarUri: StateFlow<String?> = _customAvatarUri.asStateFlow()
+
+    val premiumPackages = listOf(
+        PremiumPackage(
+            id = "pkg_gracia_inicial",
+            title = "Paquete Gracia Inicial",
+            priceUsd = 0.99,
+            priceFormatted = "$0.99 USD",
+            description = "+500 Monedas de la Virgen inmediatas para compras rápidas en la tienda.",
+            coinsReward = 500,
+            badgeTitle = "Devoto Apoyador",
+            tag = "MÁS BARATO"
+        ),
+        PremiumPackage(
+            id = "pkg_pase_vip",
+            title = "Pase Devoto VIP (x2 Monedas)",
+            priceUsd = 1.99,
+            priceFormatted = "$1.99 USD",
+            description = "+1,200 Monedas + MULTIPLICADOR x2 permanente + Acceso a TODOS los Fondos Exclusivos VIP + Corona e Insignia dorada en Chat Social.",
+            coinsReward = 1200,
+            badgeTitle = "Hijo Predilecto VIP",
+            tag = "POPULAR"
+        ),
+        PremiumPackage(
+            id = "pkg_manto_celestial",
+            title = "Cofre del Manto Celestial",
+            priceUsd = 4.99,
+            priceFormatted = "$4.99 USD",
+            description = "+3,500 Monedas + Desbloquea Fondos VIP + Todas las Bendiciones Secretas y Avatar VIP Reina Soberana.",
+            coinsReward = 3500,
+            badgeTitle = "Custodio Mayor del Manto",
+            tag = "RECOMENDADO"
+        ),
+        PremiumPackage(
+            id = "pkg_corona_legendaria",
+            title = "Reliquia: Corona de 12 Estrellas",
+            priceUsd = 19.99,
+            priceFormatted = "$19.99 USD",
+            description = "+15,000 Monedas + Rango SUPREMO 'Serafín Custodio' + Multiplicador x3 permanente + Desbloquea Fondos VIP y TODO el catálogo de la tienda.",
+            coinsReward = 15000,
+            badgeTitle = "Serafín Custodio Legendario",
+            isLegendary = true,
+            tag = "👑 LEGENDARIO SUPREMO"
+        )
+    )
+
     fun initialize(context: Context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        // Account creation timestamp: record today if brand new
+        // Account creation timestamp
         var createdTime = prefs.getLong(KEY_CREATED_TIMESTAMP, 0L)
         if (createdTime == 0L) {
             createdTime = System.currentTimeMillis()
@@ -70,34 +144,35 @@ object UserProfileManager {
         val dateFormat = SimpleDateFormat("d 'de' MMMM 'de' yyyy", Locale("es", "ES"))
         _createdDateFormatted.value = dateFormat.format(Date(createdTime))
 
-        // Calculate days since account creation
         val diffMillis = System.currentTimeMillis() - createdTime
         val days = (TimeUnit.MILLISECONDS.toDays(diffMillis) + 1).toInt()
         _daysActive.value = days
 
-        // Load coins (give 100 welcome coins if first time)
-        val savedCoins = prefs.getInt(KEY_COINS, 100)
-        _coins.value = savedCoins
-
-        // Load user name
+        _coins.value = prefs.getInt(KEY_COINS, 100)
         _userName.value = prefs.getString(KEY_USER_NAME, "Hijo/a de María") ?: "Hijo/a de María"
 
-        // Load unlocked items
         val savedUnlocked = prefs.getStringSet(KEY_UNLOCKED_ITEMS, setOf("title_iniciado")) ?: setOf("title_iniciado")
         _unlockedItemIds.value = savedUnlocked
 
-        // Selected title
-        _veteranRank.value = prefs.getString(KEY_SELECTED_TITLE, calculateVeteranRank(days)) ?: calculateVeteranRank(days)
+        _isVip.value = prefs.getBoolean(KEY_IS_VIP, false)
+        _isLegendary.value = prefs.getBoolean(KEY_IS_LEGENDARY, false)
+
+        val defaultRank = calculateVeteranRank(days)
+        _veteranRank.value = prefs.getString(KEY_SELECTED_TITLE, defaultRank) ?: defaultRank
 
         _rosesCount.value = prefs.getInt(KEY_ROSES_GIVEN, 0)
         _messagesCount.value = prefs.getInt(KEY_MESSAGES_SENT, 0)
 
-        // Check daily devotional bonus (+25 coins)
+        _avatarId.value = prefs.getString(KEY_AVATAR_ID, "avatar_corona") ?: "avatar_corona"
+        _customAvatarUri.value = prefs.getString(KEY_CUSTOM_AVATAR_URI, null)
+
         checkDailyBonus()
     }
 
     private fun calculateVeteranRank(days: Int): String {
         return when {
+            _isLegendary.value -> "Serafín Custodio Legendario (Supremo)"
+            _isVip.value -> "Hijo Predilecto VIP (Monedas x2)"
             days >= 365 -> "Veterana Mariana de Oro (Más de 1 año)"
             days >= 90 -> "Custodio del Manto (Más de 3 meses)"
             days >= 30 -> "Peregrino Fiel (Más de 1 mes)"
@@ -111,12 +186,15 @@ object UserProfileManager {
         val lastDay = prefs.getString(KEY_LAST_DAILY_BONUS, "")
         if (lastDay != todayStr) {
             prefs.edit().putString(KEY_LAST_DAILY_BONUS, todayStr).apply()
-            addCoins(25) // Daily devotion bonus
+            val bonus = if (_isLegendary.value) 75 else if (_isVip.value) 50 else 25
+            addCoins(bonus)
         }
     }
 
     fun addCoins(amount: Int) {
-        val newAmount = _coins.value + amount
+        val multiplier = if (_isLegendary.value) 3 else if (_isVip.value) 2 else 1
+        val finalAmount = amount * multiplier
+        val newAmount = _coins.value + finalAmount
         _coins.value = newAmount
         prefs.edit().putInt(KEY_COINS, newAmount).apply()
     }
@@ -136,13 +214,38 @@ object UserProfileManager {
             _unlockedItemIds.value = updated
             prefs.edit().putStringSet(KEY_UNLOCKED_ITEMS, updated).apply()
 
-            // If it's a title, select it automatically
             if (item.category == "Títulos de Veteranía") {
                 setVeteranRank(item.title)
             }
             return true
         }
         return false
+    }
+
+    fun activatePremiumPackage(pkg: PremiumPackage) {
+        // Direct coin reward
+        val newCoins = _coins.value + pkg.coinsReward
+        _coins.value = newCoins
+        prefs.edit().putInt(KEY_COINS, newCoins).apply()
+
+        // Activate VIP or Legendary perks
+        if (pkg.id == "pkg_pase_vip") {
+            _isVip.value = true
+            prefs.edit().putBoolean(KEY_IS_VIP, true).apply()
+        }
+        if (pkg.isLegendary) {
+            _isLegendary.value = true
+            _isVip.value = true
+            prefs.edit().putBoolean(KEY_IS_LEGENDARY, true).putBoolean(KEY_IS_VIP, true).apply()
+
+            // Unlock all shop items for the legendary supporter!
+            val allIds = shopCatalog.map { it.id }.toSet()
+            _unlockedItemIds.value = allIds
+            prefs.edit().putStringSet(KEY_UNLOCKED_ITEMS, allIds).apply()
+        }
+
+        // Equip prestige title
+        setVeteranRank(pkg.badgeTitle)
     }
 
     fun isItemUnlocked(itemId: String): Boolean {
@@ -160,6 +263,38 @@ object UserProfileManager {
     fun setVeteranRank(rank: String) {
         _veteranRank.value = rank
         prefs.edit().putString(KEY_SELECTED_TITLE, rank).apply()
+    }
+
+    fun setAvatarId(id: String) {
+        _avatarId.value = id
+        _customAvatarUri.value = null
+        prefs.edit().putString(KEY_AVATAR_ID, id).remove(KEY_CUSTOM_AVATAR_URI).apply()
+    }
+
+    fun setCustomAvatarUri(uriString: String?) {
+        _customAvatarUri.value = uriString
+        if (uriString != null) {
+            prefs.edit().putString(KEY_CUSTOM_AVATAR_URI, uriString).apply()
+        } else {
+            prefs.edit().remove(KEY_CUSTOM_AVATAR_URI).apply()
+        }
+    }
+
+    fun isWallpaperUnlocked(wallpaper: WallpaperItem): Boolean {
+        if (!wallpaper.isPremium) return true
+        return _isVip.value || _isLegendary.value || _unlockedItemIds.value.contains("wp_${wallpaper.id}")
+    }
+
+    fun unlockWallpaper(wallpaperId: String): Boolean {
+        val key = "wp_$wallpaperId"
+        if (_unlockedItemIds.value.contains(key)) return true
+        if (spendCoins(150)) {
+            val updated = _unlockedItemIds.value + key
+            _unlockedItemIds.value = updated
+            prefs.edit().putStringSet(KEY_UNLOCKED_ITEMS, updated).apply()
+            return true
+        }
+        return false
     }
 
     fun recordRoseGiven() {

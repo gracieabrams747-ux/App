@@ -60,7 +60,7 @@ fun WallpapersScreen(
     var selectedCategory by remember { mutableStateOf("Todos") }
     var selectedWallpaperForPreview by remember { mutableStateOf<WallpaperItem?>(null) }
 
-    val categories = listOf("Todos", "Advocaciones", "Vitrales y Arte", "Símbolos Celestiales")
+    val categories = listOf("Todos", "Exclusivos VIP", "Advocaciones", "Vitrales y Arte", "Símbolos Celestiales")
 
     val filteredWallpapers = remember(selectedCategory) {
         if (selectedCategory == "Todos") {
@@ -103,9 +103,9 @@ fun WallpapersScreen(
             }
         }
 
-        // 2-column Grid of Wallpapers
+        // Adaptive Grid of Wallpapers (supports phones, tablets, foldables smoothly at 120 FPS)
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Adaptive(minSize = 150.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 12.dp),
@@ -113,7 +113,11 @@ fun WallpapersScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            items(filteredWallpapers, key = { it.id }) { item ->
+            items(
+                items = filteredWallpapers,
+                key = { it.id },
+                contentType = { "wallpaper_card" }
+            ) { item ->
                 WallpaperCard(
                     wallpaper = item,
                     onClick = { selectedWallpaperForPreview = item }
@@ -162,28 +166,33 @@ private fun WallpaperCard(
                 contentScale = ContentScale.Crop
             )
 
+            val isUnlocked = com.example.data.UserProfileManager.isWallpaperUnlocked(wallpaper)
+
             // Top-right category pill
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.6f))
+                    .background(
+                        if (wallpaper.isPremium) MarianGold.copy(alpha = 0.9f)
+                        else Color.Black.copy(alpha = 0.6f)
+                    )
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.AutoAwesome,
+                        imageVector = if (wallpaper.isPremium) Icons.Default.AutoAwesome else Icons.Default.AutoAwesome,
                         contentDescription = null,
-                        tint = MarianGold,
+                        tint = if (wallpaper.isPremium) Color.Black else MarianGold,
                         modifier = Modifier.size(12.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = wallpaper.category,
-                        color = Color.White,
+                        text = if (wallpaper.isPremium) "👑 VIP EXCLUSIVO" else wallpaper.category,
+                        color = if (wallpaper.isPremium) Color.Black else Color.White,
                         fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }

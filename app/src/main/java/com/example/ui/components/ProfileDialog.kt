@@ -74,9 +74,14 @@ fun ProfileDialog(
     val veteranRank by UserProfileManager.veteranRank.collectAsState()
     val rosesCount by UserProfileManager.rosesCount.collectAsState()
     val messagesCount by UserProfileManager.messagesCount.collectAsState()
+    val isVip by UserProfileManager.isVip.collectAsState()
+    val isLegendary by UserProfileManager.isLegendary.collectAsState()
+    val avatarId by UserProfileManager.avatarId.collectAsState()
+    val customAvatarUri by UserProfileManager.customAvatarUri.collectAsState()
 
     var isEditingName by remember { mutableStateOf(false) }
     var nameInput by remember { mutableStateOf(userName) }
+    var showAvatarDialog by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -128,30 +133,19 @@ fun ProfileDialog(
 
                 // Avatar with 12-Star Halo and Veteran Emblem
                 Box(contentAlignment = Alignment.Center) {
-                    Box(
-                        modifier = Modifier
-                            .size(90.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    listOf(MarianGold.copy(alpha = 0.5f), MaterialTheme.colorScheme.primary)
-                                )
-                            )
-                            .border(2.dp, MarianGold, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = MarianGold,
-                            modifier = Modifier.size(46.dp)
-                        )
-                    }
+                    MarianAvatar(
+                        avatarId = avatarId,
+                        customUri = customAvatarUri,
+                        isVip = isVip,
+                        isLegendary = isLegendary,
+                        size = 84.dp,
+                        modifier = Modifier.clickable { showAvatarDialog = true }
+                    )
 
                     // Veteran Badge icon in corner
                     Box(
                         modifier = Modifier
-                            .size(28.dp)
+                            .size(26.dp)
                             .align(Alignment.BottomEnd)
                             .clip(CircleShape)
                             .background(MarianGoldDeep),
@@ -161,12 +155,41 @@ fun ProfileDialog(
                             imageVector = Icons.Default.Verified,
                             contentDescription = "Insignia de Veteranía",
                             tint = Color.White,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showAvatarDialog = true }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Cambiar Avatar",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // User Name (Editable)
                 if (!isEditingName) {
@@ -429,5 +452,9 @@ fun ProfileDialog(
                 }
             }
         }
+    }
+
+    if (showAvatarDialog) {
+        AvatarSelectionDialog(onDismiss = { showAvatarDialog = false })
     }
 }
