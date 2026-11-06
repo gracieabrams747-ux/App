@@ -55,6 +55,9 @@ class MainActivity : ComponentActivity() {
         // Mandatory Phase 1: Configure App Check before UI or Firebase operations
         configureAppCheck(this, intent)
 
+        // Initialize User Profile and Coins/Rewards system
+        com.example.data.UserProfileManager.initialize(this)
+
         enableEdgeToEdge()
 
         setContent {

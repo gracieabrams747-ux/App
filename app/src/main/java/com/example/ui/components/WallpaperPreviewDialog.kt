@@ -20,7 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -68,6 +69,7 @@ fun WallpaperPreviewDialog(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var isSettingWallpaper by remember { mutableStateOf(false) }
+    var isSavingToGallery by remember { mutableStateOf(false) }
     var showTargetSelector by remember { mutableStateOf(false) }
 
     Dialog(
@@ -88,32 +90,64 @@ fun WallpaperPreviewDialog(
                 contentScale = ContentScale.Crop
             )
 
-            // Top gradient overlay with close button
+            // Top gradient overlay with action buttons
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)
+                            colors = listOf(Color.Black.copy(alpha = 0.75f), Color.Transparent)
                         )
                     )
                     .padding(horizontal = 16.dp, vertical = 28.dp)
             ) {
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .testTag("close_preview_button")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Cerrar",
-                        tint = Color.White
-                    )
+                    // Share button
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val shareResult = WallpaperHelper.shareWallpaper(context, wallpaper.drawableRes, wallpaper.title)
+                                shareResult.onSuccess { intent ->
+                                    context.startActivity(android.content.Intent.createChooser(intent, "Compartir fondo mariano"))
+                                }.onFailure {
+                                    Toast.makeText(context, "No se pudo compartir la imagen", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Compartir fondo",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    // Close button
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .testTag("close_preview_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Cerrar",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
 
@@ -122,7 +156,7 @@ fun WallpaperPreviewDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter),
-                color = Color.Black.copy(alpha = 0.85f),
+                color = Color.Black.copy(alpha = 0.88f),
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 Column(
@@ -145,7 +179,7 @@ fun WallpaperPreviewDialog(
                         color = Color.White.copy(alpha = 0.85f)
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
                         text = wallpaper.description,
@@ -156,28 +190,80 @@ fun WallpaperPreviewDialog(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (!showTargetSelector) {
-                        Button(
-                            onClick = { showTargetSelector = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp)
-                                .testTag("set_wallpaper_button"),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MarianGoldDeep,
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(14.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Wallpaper,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Establecer como Fondo de Pantalla",
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            // Save to gallery button
+                            OutlinedButton(
+                                onClick = {
+                                    isSavingToGallery = true
+                                    coroutineScope.launch {
+                                        val result = WallpaperHelper.saveWallpaperToGallery(context, wallpaper.drawableRes, wallpaper.title)
+                                        isSavingToGallery = false
+                                        if (result.isSuccess) {
+                                            com.example.data.UserProfileManager.addCoins(20)
+                                            Toast.makeText(context, "¡Guardado con éxito en tu Galería (+20 Monedas de la Virgen)!", Toast.LENGTH_LONG).show()
+                                        } else {
+                                            Toast.makeText(context, "No se pudo guardar en la galería", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp)
+                                    .testTag("save_gallery_button"),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
+                                enabled = !isSavingToGallery
+                            ) {
+                                if (isSavingToGallery) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color.White
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Download,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Guardar",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+
+                            // Set as wallpaper button
+                            Button(
+                                onClick = { showTargetSelector = true },
+                                modifier = Modifier
+                                    .weight(2f)
+                                    .height(50.dp)
+                                    .testTag("set_wallpaper_button"),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MarianGoldDeep,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Wallpaper,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Aplicar Fondo",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     } else {
                         // Options: Home screen, Lock screen, or Both
@@ -187,7 +273,7 @@ fun WallpaperPreviewDialog(
                             fontWeight = FontWeight.Medium,
                             color = Color.White
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         if (isSettingWallpaper) {
                             Row(
@@ -196,7 +282,8 @@ fun WallpaperPreviewDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(28.dp),
+                                    modifier = Modifier.size(26.dp),
+                                    strokeWidth = 2.dp,
                                     color = MarianGold
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))

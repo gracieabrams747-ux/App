@@ -44,7 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -69,25 +69,21 @@ import com.example.ui.components.MarianHeader
 import com.example.ui.theme.MarianGold
 import com.example.ui.theme.MarianRosePink
 import com.example.ui.theme.MarianSkyBlue
-import com.example.util.TtsHelper
+import com.example.util.MaryVoiceManager
 
 @Composable
 fun PrayersScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val ttsHelper = remember { TtsHelper(context) }
-    val isSpeaking by ttsHelper.isSpeaking.collectAsState()
+    LaunchedEffect(Unit) {
+        MaryVoiceManager.initialize(context)
+    }
+    val isSpeaking by MaryVoiceManager.isSpeaking.collectAsState()
     var currentSpeakingPrayerId by remember { mutableStateOf<String?>(null) }
 
     var roseCount by remember { mutableIntStateOf(0) }
     var expandedPrayerId by remember { mutableStateOf<String?>("ave_maria") }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            ttsHelper.shutdown()
-        }
-    }
 
     Column(
         modifier = modifier
@@ -102,7 +98,7 @@ fun PrayersScreen(
                 if (isSpeaking) {
                     IconButton(
                         onClick = {
-                            ttsHelper.stop()
+                            MaryVoiceManager.stop()
                             currentSpeakingPrayerId = null
                         }
                     ) {
@@ -128,6 +124,7 @@ fun PrayersScreen(
                     onAddRose = {
                         if (roseCount < 50) {
                             roseCount++
+                            com.example.data.UserProfileManager.recordRoseGiven()
                         }
                     },
                     onReset = { roseCount = 0 }
@@ -174,11 +171,11 @@ fun PrayersScreen(
                     },
                     onSpeak = {
                         if (isThisSpeaking) {
-                            ttsHelper.stop()
+                            MaryVoiceManager.stop()
                             currentSpeakingPrayerId = null
                         } else {
                             currentSpeakingPrayerId = prayer.id
-                            ttsHelper.speak("${prayer.title}. ${prayer.text}")
+                            MaryVoiceManager.speak("${prayer.title}. ${prayer.text}")
                         }
                     },
                     onCopy = {

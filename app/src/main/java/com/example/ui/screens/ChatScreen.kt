@@ -72,7 +72,7 @@ import com.example.ui.components.MarianHeader
 import com.example.ui.theme.MarianGold
 import com.example.ui.theme.MarianRosePink
 import com.example.ui.theme.MarianSkyBlue
-import com.example.util.TtsHelper
+import com.example.util.MaryVoiceManager
 import com.example.viewmodel.ChatUiState
 import com.example.viewmodel.MaryChatViewModel
 
@@ -87,15 +87,11 @@ fun ChatScreen(
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    // Initialize TTS helper for Mary's voice
-    val ttsHelper = remember { TtsHelper(context) }
-    val isSpeaking by ttsHelper.isSpeaking.collectAsState()
-
-    DisposableEffect(Unit) {
-        onDispose {
-            ttsHelper.shutdown()
-        }
+    // Initialize Mary's singleton voice manager
+    LaunchedEffect(Unit) {
+        MaryVoiceManager.initialize(context)
     }
+    val isSpeaking by MaryVoiceManager.isSpeaking.collectAsState()
 
     // Auto-scroll on new message
     LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length) {
@@ -117,7 +113,7 @@ fun ChatScreen(
             actions = {
                 if (isSpeaking) {
                     IconButton(
-                        onClick = { ttsHelper.stop() },
+                        onClick = { MaryVoiceManager.stop() },
                         modifier = Modifier.testTag("stop_speaking_button")
                     ) {
                         Icon(
@@ -129,7 +125,7 @@ fun ChatScreen(
                 }
                 IconButton(
                     onClick = {
-                        ttsHelper.stop()
+                        MaryVoiceManager.stop()
                         viewModel.clearChat()
                     },
                     modifier = Modifier.testTag("clear_chat_button")
@@ -164,7 +160,7 @@ fun ChatScreen(
                 ChatMessageItem(
                     message = message,
                     onSpeak = { text ->
-                        ttsHelper.speak(text)
+                        MaryVoiceManager.speak(text)
                     },
                     onCopy = { text ->
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -201,8 +197,10 @@ fun ChatScreen(
             onValueChange = { inputText = it },
             onSend = {
                 if (inputText.isNotBlank()) {
-                    viewModel.sendMessage(inputText)
+                    val textToSend = inputText
                     inputText = ""
+                    viewModel.sendMessage(textToSend)
+                    com.example.data.UserProfileManager.recordMessageSent()
                 }
             },
             isGenerating = uiState is ChatUiState.Generating
