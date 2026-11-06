@@ -1,0 +1,6 @@
+{
+  "name": "Virgen María",
+  "description": "Aplicación dedicada exclusivamente a la Virgen María: advocaciones marianas, fondos de pantalla de alta calidad y conversación de consuelo maternal con IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
